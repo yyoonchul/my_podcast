@@ -1,35 +1,24 @@
+import React from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
-import { ThemeProvider, createTheme } from '@mui/material';
+import { AuthProvider } from './contexts/AuthContext';
 import LandingPage from './pages/LandingPage';
-import CategorySelection from './pages/CategorySelection';
-import TopicSelection from './pages/TopicSelection';
-import SignUp from './pages/SignUp';
-import ThankYou from './pages/ThankYou';
-
-const theme = createTheme({
-  palette: {
-    primary: {
-      main: '#1976d2',
-    },
-    secondary: {
-      main: '#dc004e',
-    },
-  },
-});
+import PodcastSelectionPage from './pages/PodcastSelectionPage';
+import CustomizationPage from './pages/CustomizationPage';
+import SignUpPage from './pages/SignUpPage';
+import './styles/globals.css';
 
 function App() {
   return (
-    <ThemeProvider theme={theme}>
+    <AuthProvider>
       <Router>
         <Routes>
           <Route path="/" element={<LandingPage />} />
-          <Route path="/category" element={<CategorySelection />} />
-          <Route path="/topics" element={<TopicSelection />} />
-          <Route path="/signup" element={<SignUp />} />
-          <Route path="/thank-you" element={<ThankYou />} />
+          <Route path="/podcast-selection" element={<PodcastSelectionPage />} />
+          <Route path="/customization" element={<CustomizationPage />} />
+          <Route path="/signup" element={<SignUpPage />} />
         </Routes>
       </Router>
-    </ThemeProvider>
+    </AuthProvider>
   );
 }
 
