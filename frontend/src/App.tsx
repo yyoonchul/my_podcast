@@ -7,7 +7,7 @@ import CustomizationPage from './pages/CustomizationPage';
 import SignUpPage from './pages/SignUpPage';
 import './styles/globals.css';
 
-function App() {
+const App: React.FC = () => {
   return (
     <AuthProvider>
       <Router>
@@ -20,6 +20,6 @@ function App() {
       </Router>
     </AuthProvider>
   );
-}
+};
 
 export default App; 

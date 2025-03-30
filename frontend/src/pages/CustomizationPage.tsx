@@ -49,7 +49,13 @@ const CustomizationPage: FC = () => {
       alert('Please select a job role');
       return;
     }
-    navigate('/signup');
+    navigate('/signup', {
+      state: {
+        podcastType,
+        selectedTopics: podcastType === 'news' ? selectedTopics : [],
+        selectedJobRoles: podcastType === 'career' ? [selectedJob] : []
+      }
+    });
   };
 
   return (
