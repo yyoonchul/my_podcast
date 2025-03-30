@@ -4,9 +4,6 @@ import LandingPage from './pages/LandingPage';
 import PodcastSelectionPage from './pages/PodcastSelectionPage';
 import CustomizationPage from './pages/CustomizationPage';
 import WaitlistSignupPage from './pages/WaitlistSignupPage';
-import Header from './components/Header';
-import Footer from './components/Footer';
-import FeatureCard from './components/FeatureCard';
 
 function App() {
   return (
