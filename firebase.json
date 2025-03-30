@@ -1,6 +1,6 @@
 {
   "hosting": {
-    "public": "my_podcast",
+    "public": "public",
     "ignore": [
       "firebase.json",
       "**/.*",
