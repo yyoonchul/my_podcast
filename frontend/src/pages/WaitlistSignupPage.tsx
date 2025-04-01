@@ -2,7 +2,6 @@ import React, { FC, useState, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import Header from '../components/Header';
 import Footer from '../components/Footer';
-import { submitWaitlistData } from '../services/waitlist';
 
 interface LocationState {
   podcastType: 'news' | 'career';
@@ -32,20 +31,32 @@ const WaitlistSignupPage: FC = () => {
     setMessage('');
 
     try {
-      // Firebase에 데이터 저장
-      await submitWaitlistData({
-        email,
-        podcastType: state.podcastType,
-        selectedTopics: state.selectedTopics,
-        selectedJobRoles: state.selectedJobRoles,
-        wantProPlan
+      // Submit waitlist data
+      const response = await fetch('/api/submit-waitlist', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          email,
+          podcastType: state.podcastType,
+          selectedTopics: state.selectedTopics,
+          selectedJobRoles: state.selectedJobRoles,
+          wantProPlan,
+          createdAt: new Date().toISOString()
+        }),
       });
+      
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.message || 'Failed to submit. Please try again.');
+      }
       
       setMessage('Thank you for joining our waitlist! We\'ll be in touch soon.');
       setEmail('');
       setWantProPlan(false);
-    } catch (err) {
-      setMessage('Something went wrong. Please try again.');
+    } catch (err: any) {
+      setMessage(err.message || 'Something went wrong. Please try again.');
       console.error('Error:', err);
     } finally {
       setIsLoading(false);
