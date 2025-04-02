@@ -15,6 +15,7 @@ function App() {
         <Route path="/customization" element={<CustomizationPage />} />
         <Route path="/signup" element={<WaitlistSignupPage />} />
       </Routes>
+      <Analytics/>
     </Router>
   );
 }
