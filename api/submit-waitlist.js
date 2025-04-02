@@ -1,8 +1,9 @@
-// Try to use Edge Config if available, with fallback to in-memory storage
-let { createClient } = require('@vercel/edge-config');
-const tempStorage = []; // Fallback storage
+// Waitlist API handler using Vercel Edge Config
+const { get, createClient } = require('@vercel/edge-config');
 
-// Simple API to handle waitlist submissions
+// Memory fallback storage
+const tempStorage = [];
+
 module.exports = async (req, res) => {
   // Set CORS headers
   res.setHeader('Access-Control-Allow-Credentials', true);
@@ -27,12 +28,12 @@ module.exports = async (req, res) => {
   try {
     const { email, podcastType, selectedTopics, selectedJobRoles, wantProPlan, createdAt } = req.body;
     
-    // 필수 필드 검증
+    // Validate required fields
     if (!email || !podcastType) {
       return res.status(400).json({ error: 'Missing required fields' });
     }
 
-    // 새 항목 생성
+    // Create new submission
     const newSubmission = {
       id: `wait_${Date.now()}`,
       email,
@@ -43,41 +44,74 @@ module.exports = async (req, res) => {
       createdAt: createdAt || new Date().toISOString()
     };
 
-    // 로그 남기기 (디버깅 용도)
+    // Log for debugging
     console.log('New waitlist submission:', JSON.stringify(newSubmission));
     
+    // Store the submission
     try {
-      // Edge Config 사용 시도
-      if (process.env.EDGE_CONFIG && createClient) {
-        const edgeConfig = createClient(process.env.EDGE_CONFIG);
-        let waitlist = [];
+      if (process.env.EDGE_CONFIG && process.env.VERCEL_API_TOKEN) {
+        console.log('Attempting to use Edge Config...');
         
+        // 1. Get current waitlist data using edge-config package
+        let waitlist = [];
         try {
-          // 기존 데이터 가져오기 시도
+          // Create the Edge Config client
+          const edgeConfig = createClient(process.env.EDGE_CONFIG);
           waitlist = await edgeConfig.get('waitlist') || [];
-        } catch (getError) {
-          console.error('Error fetching from Edge Config:', getError);
-          // 오류 발생 시 비어있는 배열로 시작
+          console.log(`Found ${waitlist.length} existing entries in Edge Config`);
+        } catch (readError) {
+          console.error('Error reading from Edge Config:', readError);
+          console.log('Using empty waitlist array');
         }
         
-        // 새 항목 추가
+        // 2. Add new submission
         waitlist.push(newSubmission);
         
-        // Edge Config에 저장
-        await edgeConfig.set('waitlist', waitlist);
-        console.log('Successfully saved to Edge Config');
+        // 3. Update Edge Config using Vercel API
+        // Extract Edge Config ID from connection string
+        const connectionString = process.env.EDGE_CONFIG;
+        const url = new URL(connectionString);
+        const pathSegments = url.pathname.split('/');
+        const edgeConfigId = pathSegments[pathSegments.length - 1];
+        
+        const updateResponse = await fetch(
+          `https://api.vercel.com/v1/edge-config/${edgeConfigId}/items`,
+          {
+            method: 'PATCH',
+            headers: {
+              Authorization: `Bearer ${process.env.VERCEL_API_TOKEN}`,
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              items: [
+                {
+                  operation: 'upsert',
+                  key: 'waitlist',
+                  value: waitlist,
+                },
+              ],
+            }),
+          }
+        );
+        
+        if (updateResponse.ok) {
+          console.log('Successfully saved to Edge Config');
+        } else {
+          const errorData = await updateResponse.json();
+          throw new Error(`Edge Config update failed: ${JSON.stringify(errorData)}`);
+        }
       } else {
-        // Edge Config를 사용할 수 없는 경우 임시 저장소 사용
+        // Edge Config not configured, use temporary storage
         tempStorage.push(newSubmission);
-        console.log('Saved to temporary storage (Edge Config not available)');
+        console.log(`Saved to temporary storage (${tempStorage.length} total entries)`);
       }
     } catch (storageError) {
-      // 저장 실패 시도 임시 저장소에 저장
+      // Fallback to memory storage
       console.error('Error with Edge Config, using temp storage:', storageError);
       tempStorage.push(newSubmission);
     }
 
-    // 성공적인 응답 반환
+    // Return success
     return res.status(200).json({ 
       success: true, 
       message: 'Successfully added to waitlist' 
